@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스마트 머니로그 - 직관적인 웹 가계부</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- 1. 상단 네비게이션 헤더 -->
+    <header class="navbar">
+      <div class="brand">
+        <span class="brand-icon">💳</span>
+        <div>
+          <h1>스마트 머니로그</h1>
+          <p class="brand-sub">Smart MoneyLog · 쉽고 직관적인 자산 가계부</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="loadSampleBtn" class="btn-sm btn-outline" title="평가 시연용 샘플 데이터를 채웁니다">샘플 데이터 채우기</button>
+        <button id="exportCsvBtn" class="btn-sm btn-outline" title="엑셀 호환 CSV 다운로드">CSV 내보내기</button>
+        <button id="backupJsonBtn" class="btn-sm btn-outline" title="JSON 백업">백업</button>
+      </div>
+    </header>
+
+    <!-- 2. 월 선택 컨트롤러 -->
+    <section class="month-controller">
+      <button id="prevMonthBtn" class="month-nav-btn" title="이전 달">◀</button>
+      <div class="month-display">
+        <span id="currentMonthLabel" class="month-text">2026년 11월</span>
+        <button id="todayMonthBtn" class="today-badge">이번 달</button>
+      </div>
+      <button id="nextMonthBtn" class="month-nav-btn" title="다음 달">▶</button>
+    </section>
+
+    <!-- 3. 금융 대시보드 요약 카드 -->
+    <section class="dashboard-grid">
+      <div class="summary-card income-card">
+        <div class="card-label">총 수입</div>
+        <div id="totalIncome" class="card-value income-val">+0원</div>
+        <span class="card-sub">당월 발생 수입</span>
+      </div>
+
+      <div class="summary-card expense-card">
+        <div class="card-label">총 지출</div>
+        <div id="totalExpense" class="card-value expense-val">-0원</div>
+        <span class="card-sub">당월 실제 지출</span>
+      </div>
+
+      <div class="summary-card balance-card">
+        <div class="card-label">순 잔액 (수지차)</div>
+        <div id="netBalance" class="card-value balance-val">0원</div>
+        <span class="card-sub">수입 - 지출 여력</span>
+      </div>
+
+      <div class="summary-card budget-card">
+        <div class="budget-header">
+          <span class="card-label">당월 예산 소진율</span>
+          <button id="setBudgetBtn" class="budget-setting-btn">예산 설정</button>
+        </div>
+        <div class="budget-val-row">
+          <strong id="budgetRatioText">0%</strong>
+          <span id="budgetDetailText">0원 / 2,000,000원</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="budgetProgressFill" class="progress-bar-fill"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. 메인 콘텐츠 2열 그리드: 입력 폼 & 카테고리 통계 -->
+    <div class="middle-grid">
+      <!-- 4-1. 수입/지출 등록 카드 -->
+      <section class="card form-card">
+        <div class="card-title-row">
+          <h2>새 내역 기록</h2>
+          <div class="type-toggle">
+            <button type="button" id="typeExpenseBtn" class="toggle-btn active" data-type="expense">지출</button>
+            <button type="button" id="typeIncomeBtn" class="toggle-btn" data-type="income">수입</button>
+          </div>
+        </div>
+
+        <form id="transactionForm" class="tx-form">
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="txDate">날짜</label>
+              <input type="date" id="txDate" required>
+            </div>
+            <div class="form-group flex-1">
+              <label for="txCategory">카테고리</label>
+              <select id="txCategory" required>
+                <!-- JS에서 수입/지출에 따라 옵션 동적 로드 -->
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label for="txTitle">사용처 / 내역</label>
+              <input type="text" id="txTitle" placeholder="예: 스타벅스, 구내식당, 월급" required autocomplete="off">
+            </div>
+            <div class="form-group flex-1">
+              <label for="txAmount">금액 (원)</label>
+              <input type="number" id="txAmount" placeholder="금액 입력" min="1" step="1" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="txMemo">메모 (선택사항)</label>
+            <input type="text" id="txMemo" placeholder="예: 팀 점심 회식, 간식 구매" autocomplete="off">
+          </div>
+
+          <button type="submit" class="btn-submit">내역 추가하기</button>
+        </form>
+      </section>
+
+      <!-- 4-2. 카테고리별 지출 통계 패널 -->
+      <section class="card stats-card">
+        <div class="card-title-row">
+          <h2>카테고리별 지출 분석</h2>
+          <span class="stats-badge">당월 기준</span>
+        </div>
+        <div id="categoryStatsList" class="category-stats-list">
+          <!-- JS 동적 생성 -->
+        </div>
+      </section>
+    </div>
+
+    <!-- 5. 거래 내역 리스트 섹션 -->
+    <section class="card list-card">
+      <div class="list-header">
+        <div class="list-title-box">
+          <h2>상세 거래 내역</h2>
+          <span id="txCountBadge" class="count-badge">총 0건</span>
+        </div>
+
+        <div class="list-filters">
+          <!-- 탭 필터 -->
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">전체</button>
+            <button class="filter-tab" data-filter="expense">지출만</button>
+            <button class="filter-tab" data-filter="income">수입만</button>
+          </div>
+          <!-- 검색창 -->
+          <input type="text" id="searchKeyword" class="search-input" placeholder="내역 또는 메모 검색...">
+          <!-- 정렬 -->
+          <select id="sortSelect" class="sort-select">
+            <option value="date_desc">최신 일자순</option>
+            <option value="date_asc">과거 일자순</option>
+            <option value="amount_desc">높은 금액순</option>
+            <option value="amount_asc">낮은 금액순</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="tx-table">
+          <thead>
+            <tr>
+              <th style="width: 15%;">일자</th>
+              <th style="width: 15%;">구분/분류</th>
+              <th style="width: 30%;">사용처 및 내용</th>
+              <th style="width: 25%; text-align: right;">금액</th>
+              <th style="width: 15%; text-align: center;">관리</th>
+            </tr>
+          </thead>
+          <tbody id="txTableBody">
+            <!-- JS 동적 생성 -->
+          </tbody>
+        </table>
+      </div>
+
+      <div id="emptyState" class="empty-state" style="display:none;">
+        <span class="empty-icon">📂</span>
+        <p>선택하신 기간에 등록된 내역이 없습니다.</p>
+        <span class="empty-sub">위의 폼을 통해 새로운 수입이나 지출을 기록해보세요.</span>
+      </div>
+    </section>
+
+    <!-- 하단 푸터 -->
+    <footer class="app-footer">
+      <p>© 2026 스마트 머니로그 (Smart MoneyLog) · 실기평가 자유과제 포트폴리오</p>
+      <div class="footer-links">
+        <span id="resetDataBtn" class="reset-link">전체 데이터 초기화</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
